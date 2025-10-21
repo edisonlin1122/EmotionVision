@@ -23,3 +23,18 @@ EMOTIONVISION is a web-based emotion recognition system that classifies facial e
 
 The dataset is organized into `train/` and `validation/` folders, each containing subfolders for the following emotion classes:
 angry/ disgust/ fear/ happy/ neutral/ sad/ surprise/
+
+## Model Setup
+
+Before running the web app, you need to generate the trained model file `emotionModel.pth`.  
+This file contains the weights for the Convolutional Neural Network used in the emotion classification.
+
+To generate it, run the training script:
+
+python expressionClassifier.py
+
+## Run the Web App
+
+Once the model is trained and `emotionModel.pth` is generated, launch the Flask app:
+
+python app.py
