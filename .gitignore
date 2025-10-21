@@ -1,0 +1,13 @@
+.env
+config.json
+*.pt
+*.pkl
+__pycache__/
+*.pyc
+venv/
+uploads/
+static/uploads/
+.vscode/
+.idea/
+.DS_Store
+*.log

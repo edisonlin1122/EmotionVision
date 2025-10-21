@@ -1,0 +1,11 @@
+flask
+torch
+torchvision
+opencv-python
+numpy
+matplotlib
+pillow
+jinja2
+werkzeug
+click
+itsdangerous

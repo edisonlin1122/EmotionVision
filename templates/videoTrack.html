@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Emotion Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- chart.js library for pie chart use later -->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: Segoe UI, sans-serif;
+            background-color: #1e1e1e;
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 150px;
+            background-color: #2a2a2a;
+            border-bottom: 2px solid #444;
+        }
+        header h1 {
+            font-size: 48px;
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+            color: #ffffff;
+        }
+        .return-button {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        .return-button:hover {
+            background-color: #444;
+        }
+        .container {
+            display: flex;
+            min-height: calc(100vh - 150px);
+        }
+        .half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        .left {
+            border-right: 2px solid #444;
+        }
+        h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 18px;
+            color: #cccccc;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 400px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label.custom-file-upload {
+            background-color: #333;
+            color: white;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+        label.custom-file-upload:hover {
+            background-color: #444;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        input[type="submit"] {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        input[type="submit"]:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="return-button">← Return</a>
+        <h1>Video Emotion Tracking</h1>
+    </header>
+    <div class="container">
+        <div class="half left">
+            <h2>Upload Your Video</h2> <!-- code for telling users to select the video file -->
+            <p>Select a video file to analyze emotional expression across time using our trained model.</p>
+            <form method="POST" enctype="multipart/form-data">
+                <label for="video" class="custom-file-upload">Choose Video</label>
+                <input type="file" name="video" id="video" accept="video/*" required>
+                <input type="submit" value="Analyze Emotion">
+            </form>
+        </div>
+        <div class="half right">
+            <h2>Results</h2> <!-- code for showing the video and results after upload -->
+            {% if filename %}
+                <video id="emotion-video" width="480" controls style="margin-bottom: 20px;">
+                    <source src="{{ url_for('static', filename='uploads/' + filename) }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+
+                <!-- Lets users pick the video watching speed -->
+                <label for="speed-select" style="margin-bottom: 10px; font-size: 18px;">Playback Speed:</label>
+                <select id="speed-select" style="padding: 8px 12px; font-size: 16px; border-radius: 6px; background-color: #333; color: white;">
+                    <option value="0.25">0.25x</option>
+                    <option value="0.5" selected>0.5x</option>
+                    <option value="1">1x (Normal)</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                </select>
+
+                <p id="emotion-label" style="font-size: 24px; color: #4ade80;"></p>
+
+                <!-- Label for the pie chart -->
+<p style="margin-top: 30px; font-size: 20px; color: #cccccc;">Pie Chart – Distribution of Predicted Emotions Across All Analyzed Frames</p>
+
+
+                <!-- actually uses the chart.js to put the pie chart here -->
+                <canvas id="emotionChart" width="300" height="300" style="margin-top: 20px;"></canvas>
+            {% else %}
+                <p>Once uploaded, the emotion timeline will appear here.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('video');
+        const label = document.querySelector('.custom-file-upload');
+
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) {
+                label.textContent = fileInput.files[0].name;
+            } else {
+                label.textContent = 'Choose Video';
+            }
+        });
+
+        {% if emotion_data %}
+        const emotionData = {{ emotion_data | tojson }};
+        const video = document.getElementById("emotion-video");
+        const emotionLabel = document.getElementById("emotion-label");
+
+        // Control for setting the play speed
+        const speedSelect = document.getElementById("speed-select");
+        speedSelect.addEventListener("change", () => {
+            video.playbackRate = parseFloat(speedSelect.value);
+        });
+
+        video.addEventListener("timeupdate", () => {
+            const currentTime = video.currentTime;
+            const match = emotionData.find(e => Math.floor(e.time) === Math.floor(currentTime));
+            if (match) {
+                emotionLabel.textContent = `Emotion: ${match.emotion}`;
+            }
+        });
+
+        // Counts how many times each emotion appears
+        const emotionCounts = {};
+        emotionData.forEach(e => {
+            emotionCounts[e.emotion] = (emotionCounts[e.emotion] || 0) + 1;
+        });
+
+        // Puts the data into lists for the pie chart
+        const chartLabels = Object.keys(emotionCounts);
+        const chartValues = Object.values(emotionCounts);
+        const chartColors = ['#ef4444','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#6b7280'];
+
+        // draws the chart with all the data
+        const ctx = document.getElementById('emotionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartValues,
+                    backgroundColor: chartColors,
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
